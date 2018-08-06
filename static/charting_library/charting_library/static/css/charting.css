@@ -1,0 +1,29 @@
+
+.header-group-fullscreen{
+  float: right;
+  padding-right: 5px;
+}
+.dataSelect{
+  float:left;
+  margin-left:10px;
+  background:none;
+}
+
+.group .button {
+  font-weight: normal;
+  color: #fff;
+  font-size: 16px;
+  line-height:16px;
+  background:none;
+  border:none;
+}
+.group .button svg {
+  fill: #fff;
+}
+.group .selected{
+  background:#274ca1;
+}
+.chart-page .chart-container {
+  border:none;
+}
+

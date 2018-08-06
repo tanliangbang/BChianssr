@@ -1,0 +1,9 @@
+/build/
+/config/
+/dist/
+/static/*
+/src/utils/md5.js
+/src/page/exchange/model/KeyLine.vue
+/static/greetest/gt.js
+/*.js
+/test/unit/coverage/

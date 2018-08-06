@@ -1,0 +1,75 @@
+.login, .regist, .foundPassword{
+  height:100%;
+  >div:nth-child(1){
+    width:100%;
+    height:100%;
+    background:url("../../../static/img/loginbg.png");
+    background-color: #273c6c;
+    background-size:100% 100%;
+  }
+}
+.border_button{
+  position:relative;
+  display:inline-block;
+  line-height: 50px;
+  color:#fff;
+  cursor: pointer;
+  width: 320px;
+  height: 50px;
+  border-radius: 75px;
+  text-align: center;
+  background-image: linear-gradient(180deg, #245bfc 0%, #00a7ff 100%);
+}
+.border_button::after{
+  position: absolute;
+  width:318px;
+  height:48px;
+  top: 1px; bottom: 1px;
+  left: 1px; right: 1px;
+  content: '返回首页';
+  border-radius: 30px;
+  background:#273c6c;
+}
+input::-webkit-input-placeholder{
+  color: #a9c2fd;
+}
+input::-moz-placeholder{   /* Mozilla Firefox 19+ */
+  color: #a9c2fd;
+}
+input:-moz-placeholder{    /* Mozilla Firefox 4 to 18 */
+  color: #a9c2fd;
+}
+input:-ms-input-placeholder{  /* Internet Explorer 10-11 */
+  color: #a9c2fd;
+}
+
+.showpass{
+  content:" ";
+  display:inline-block;
+  vertical-align: -3px;
+  margin-left:5px;
+  width:16px;
+  height:12px;
+  cursor: pointer;
+  background:url("../../../static/img/but_eyesopen.png")
+ }
+.hidepass{
+  content:" ";
+  display:inline-block;
+  vertical-align: -3px;
+  margin-left:5px;
+  width:16px;
+  height:12px;
+  cursor: pointer;
+  background:url("../../../static/img/but_eyesclose.png")
+}
+
+.error_promit:after{
+   content:" ";
+   display:inline-block;
+   vertical-align: -3px;
+   margin-left:5px;
+   width:16px;
+   height:16px;
+   background:url("../../../static/img/but_del.png")
+ }

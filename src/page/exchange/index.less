@@ -1,0 +1,148 @@
+@import "./../../style/common";
+.exchangeNav{
+  width: 627px;
+  height: 70px;
+  margin:88px auto 48px;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  a{
+    flex: 1;
+    color:#fff;
+    line-height: 70px;
+    text-align: center;
+    cursor: pointer;
+  }
+  a:nth-child(1){
+    border-bottom-left-radius: 8px;
+    -webkit-border-top-left-radius: 8px;
+  }
+  a:nth-child(2){
+    border-bottom-right-radius: 8px;
+    -webkit-border-top-right-radius: 8px;
+  }
+  .unselect{
+     border:1px solid #5978be;
+   }
+  .selected{
+    background-image: linear-gradient(176deg,
+    #245bfc 0%,
+    #00a7ff 100%);
+  }
+}
+
+.legalTender{
+   .exList{
+     margin:26px 0px 30px;
+     >div{
+       margin:50px auto;
+       color:#fff;
+       text-align: center;
+       span{
+         display:inline-block;
+         margin-right:20px;
+       }
+     }
+     >table{
+       box-sizing: border-box;
+       img{
+         width:20px;
+         height:20px;
+         border-radius: 50%;
+         margin-right:10px;
+         vertical-align: middle;
+       }
+     }
+   }
+  .myOrder{
+    header{
+      height:94px;
+      background-color: #273c6c;
+      margin-bottom:25px;
+      >span{
+        display:inline-block;
+        color:#fff;
+        line-height: 94px;
+        padding-left:38px;
+        font-size:20px;
+        width:347px;
+        background:#284585;
+      }
+      .search{
+        float:right;
+        margin-right:100px;
+        width: 398px;
+        height: 56px;
+        background-color: #273c6e;
+        border-radius: 8px;
+        border: solid 2px #304a87;
+        margin-top:19px;
+        position:relative;
+        input{
+          width:100%;
+          height:100%;
+          background-color: #273c6e;
+          border:none;
+          padding-right:90px;
+          font-size: 17px;
+          color: #a9c2fd;
+          padding-left:25px;
+          border-radius: 8px;
+        }
+        button{
+          width: 88px;
+          height: 48px;
+          background-color: #4177fc;
+          border-radius: 5px;
+          border:none;
+          color:#fff;
+          font-size: 17px;
+          position:absolute;
+          right:2px;
+          top:2px;
+        }
+      }
+    }
+    table{
+      margin-bottom:20px;
+      tr{
+        cursor: pointer;
+      }
+      >tr:nth-child(4) {
+        td{
+          color:#4283c8;
+        }
+      }
+    }
+  }
+
+  table{
+    width:100%;
+    height:100%;
+    color:#fff;
+    text-align: left;
+    th{
+      line-height: 44px;
+      background-color: #294586;
+    }
+    td{
+      line-height: 60px;
+    }
+    tr:nth-child(odd) {
+      background-color: #243763;
+    }
+    tr:nth-child(even) {
+      background-color: #263c70;
+    }
+    tr{
+      td:nth-child(1),th:nth-child(1) {
+        padding-left:50px;
+      }
+      td:last-child,th:last-child{
+        padding-right:50px;
+        text-align: right;
+      }
+    }
+  }
+
+}
