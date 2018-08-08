@@ -44,7 +44,7 @@
             </div>
           </div>
           <div class="totalPrice" >
-            <span v-if="type==='limit'">{{$t("lang.exchange.totalPrice")}}: {{decimal(buy.price, buy.number, 'mul')}} {{currInfo.quoteCoin.toUpperCase()}}</span>
+            <span v-if="type==='limit'">{{$t("lang.exchange.totalPrice")}}: {{totalBuyPrice +' '+currInfo.quoteCoin.toUpperCase()}}</span>
           </div>
           <div>
             <a :class="buy_status===2?'ok_button buyBtn':'no_button buyBtn'" v-on:click="buyFn('buy')">
@@ -54,14 +54,14 @@
           </div>
         </div>
       </div>
-      <div v-on:keyup="sellKeyup()">
+      <div>
         <a :class="type==='markt'?'markt':'clickBtn'" v-on:click="changeType('markt')">{{$t("lang.exchange.marketOrder")}}</a>
         <div>
           <div class="praceInput">
             <div>
               <span>{{$t("lang.exchange.price")}}</span>
               <span>{{type!=='markt'?currInfo.quoteCoin.toUpperCase():''}}</span>
-              <input v-if="type!=='markt'"  v-model="sell.price"/>
+              <input v-if="type!=='markt'" v-on:keyup="sellPriceKeyup()"  v-model="sell.price"/>
               <input v-if="type==='markt'" class="gray"  :value="$t('lang.exchange.martkPrompt')"/>
             </div>
             <p>≈54254.355</p>
@@ -70,14 +70,14 @@
             <div>
               <span>{{$t("lang.exchange.amount")}}</span>
               <span>{{currInfo.baseCoin.toUpperCase()}}</span>
-              <input v-model="sell.number"/>
+              <input v-on:keyup="sellNumberKeyup()" v-model="sell.number"/>
             </div>
             <div class="process">
               <span></span><span></span><span></span><span></span>
             </div>
           </div>
           <div class="totalPrice" >
-            <span v-if="type==='limit'">{{$t("lang.exchange.totalPrice")}}: {{decimal(sell.price, sell.number, 'mul')}} {{currInfo.quoteCoin.toUpperCase()}}</span>
+            <span v-if="type==='limit'">{{$t("lang.exchange.totalPrice")}}: {{totalSellPrice +' '+ currInfo.quoteCoin.toUpperCase()}}</span>
           </div>
           <div>
             <a :class="sell_status===2?'ok_button buyBtn':'no_button buyBtn'" v-on:click="buyFn('sell')">
@@ -110,6 +110,8 @@ export default {
       currAssetList: [],
       sell_status: 0,
       buy_status: 0,
+      totalSellPrice: 0,
+      totalBuyPrice: 0,
       buy: {
         price: 0,
         number: 0
@@ -174,12 +176,24 @@ export default {
       this.buy.number = Tool.numberCheck(this.buy.number, limitVolumePrecision)
       this.keyBuyCheck()
     },
+    sellPriceKeyup () {
+      let limitPricePrecision = this.currInfo.currCoin.limitPricePrecision
+      this.sell.price = Tool.numberCheck(this.sell.price, limitPricePrecision)
+      this.keysellCheck()
+    },
+    sellNumberKeyup () {
+      let limitVolumePrecision = this.currInfo.currCoin.limitVolumePrecision
+      this.sell.number = Tool.numberCheck(this.sell.number, limitVolumePrecision)
+      this.keysellCheck()
+    },
     keyBuyCheck () {
+      this.totalBuyPrice = Tool.decimal(this.buy.price, this.buy.number, 'mul')
       if (this.buy.number > 0 && this.buy.price > 0) {
         this.buy_status = 2
       }
     },
-    sellKeyup () {
+    keysellCheck () {
+      this.totalSellPrice = Tool.decimal(this.sell.price, this.sell.number, 'mul')
       if (this.sell.number > 0 && this.sell.price > 0) {
         this.sell_status = 2
       }
@@ -187,7 +201,13 @@ export default {
     async buyFn(str) {
       let symbol = this.currInfo.baseCoin + this.currInfo.quoteCoin
       let param
+      console.log(this.currInfo.currCoin)
       if (str === 'buy') {
+        if (this.type === 'markt' && this.currInfo.currCoin.marketVolumeMin !== null) {
+          if (this.totalBuyPrice < this.currInfo.currCoin.marketVolumeMin) {
+            this.$prompt.error('市价最小交易金额为' + this.currInfo.currCoin.marketVolumeMin)
+          }
+        }
         if (this.buy_status !== 2) return
         this.buy_status = 1
         param = {
@@ -198,6 +218,11 @@ export default {
           price: this.type === 'markt' ? '' : this.buy.price
         }
       } else {
+        if (this.type === 'markt' && this.currInfo.currCoin.marketVolumeMin !== null) {
+          if (this.totalSellPrice < this.currInfo.currCoin.marketVolumeMin) {
+            this.$prompt.error('市价最小交易金额为' + this.currInfo.currCoin.marketVolumeMin)
+          }
+        }
         if (this.sell_status !== 2) return
         this.sell_status = 1
         param = {
@@ -218,6 +243,8 @@ export default {
       if (data.status === 200) {
         this.getUserAsset()
         this.$parent.getMyEntrustList()
+      } else {
+        this.$prompt.error(data.message)
       }
     }
   }

@@ -54,7 +54,12 @@ export const loginOut = (params) => http.post(base + '/tokens/current', params, 
 /**
  * 找回密码发送短信验证码
  */
-export const resetSendSMS = (params) => http.post(base + '/tokens/sms/reset', params)
+export const resetSendSMS = (params) => http.post(base + '/tokens/sms/retrieve', params)
+
+/**
+ * 修改密码发送短信验证码
+ */
+export const changePassOrEmailSendSMS = (params) => http.post(base + '/tokens/sms/reset', params)
 
 /**
  * 找回密码发送邮箱验证码
@@ -65,6 +70,11 @@ export const resetEmailSendSMS = (params) => http.post(base + '/emails/reset/cod
  * 通过手机号码找回密码
  */
 export const foundByPone = (params) => http.post(base + '/tokens/mobile/password/retrieve', params)
+
+/**
+ * 修改密码
+ */
+export const changePasswrod = (params) => http.post(base + '/tokens/mobile/password/reset', params)
 
 /**
  * 通过邮箱找回密码

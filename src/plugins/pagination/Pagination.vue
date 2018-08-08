@@ -3,6 +3,10 @@
       <ul>
         <li ><a :class="pagination.current===1?'disabled':''" v-on:click="prePage">上一页</a></li>
         {{dealTotalPage()}}
+        <li>
+          <a> {{pagination.current + '/' + pagination.total}}</a>
+        </li>
+        <!--{{dealTotalPage()}}
         <li v-on:click="toPage(1)" v-if="pagination.current>4&&pagination.total>6"><a :class="pagination.current===1?'active':''">1</a></li>
         <li v-if="pagination.current>4&&pagination.total>6" class="ellipsis"></li>
         <li v-for="(item) in [1,2,3,4,5]" :key="item.id">
@@ -13,6 +17,7 @@
         </li>
         <li v-if="pagination.total>7&&pagination.current < (pagination.total-3)" class="ellipsis"></li>
         <li v-on:click="toPage(pagination.total)"  v-if="pagination.total>=6"><a :class="pagination.current===pagination.total?'active':''">{{pagination.total}}</a></li>
+        -->
         <li> <a :class="pagination.current===pagination.total?'disabled':''" v-on:click="nextPage">下一页</a></li>
       </ul>
   </div>
@@ -26,13 +31,15 @@ export default {
     return {
     }
   },
-  created () {
+  mounted () {
+    if (!this.pagination.pageSize) {
+      this.pagination.pageSize = 15
+    }
   },
   methods: {
     toPage (num) {
-      this.pagination.onShowSizeChange(num)
+      this.pagination.onShowSizeChange(num, this.pagination.pageSize)
       this.pagination.current = num
-      window.scrollTo(0, 0)
     },
     dealTotalPage () {
       if (this.pagination.totalSize > 0) {
@@ -75,7 +82,7 @@ export default {
       text-align: center;
       list-style: none;
       .active{
-        background:@mainColor;
+        // background:@mainColor;
         color:#fff;
       }
       .ellipsis{
@@ -95,8 +102,8 @@ export default {
           cursor: not-allowed;
       }
       .disabled:hover{
-          background:#fff;
-          color:@mainColor;
+          // background:#fff;
+        color:#fff;
       }
       li{
         line-height: 36px;
@@ -108,16 +115,16 @@ export default {
          padding: 8px 12px;
          cursor: pointer;
          line-height: 1.42857143;
-         background-color: #fff;
-         color: @mainColor;
-         border: 1px solid @mainColor;
+         // background-color: #fff;
+         color:#a8c1ff;
+         // border: 1px solid @mainColor;
          white-space: nowrap;
          margin:0px 8px;
          -webkit-transition: all 0.28s ease;
          transition: all 0.28s ease;
        }
        >a:hover{
-         background:@mainColor;
+         // background:@mainColor;
          color:#fff;
        }
       }

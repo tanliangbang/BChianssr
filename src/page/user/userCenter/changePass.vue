@@ -98,7 +98,7 @@ export default {
           let currNode = _this.$refs.send
           currNode.className = 'button-loading'
           currNode.innerHTML = ''
-          api.resetSendSMS(result).then(function (res) {
+          api.changePassOrEmailSendSMS(result).then(function (res) {
             currNode.className = ''
             if (res.status === 200) {
               _this.tokenId = res.data.tokenId
@@ -146,10 +146,11 @@ export default {
       }
       let _this = this
       this.button_status = 1
-      api.foundByPone(params).then(function (res) {
+      api.changePasswrod(params).then(function (res) {
         if (res.status === 200) {
           _this.$mask.showAlert(_this.$t('lang.form.changeSuccess'), 'success', function () {
-            _this.$router.push('/userCenter')
+            _this.$store.dispatch('setUserInfo', null)
+            _this.$router.push('/login')
           }, _this.$t('lang.form.submit'))
           _this.button_status = 0
         } else {

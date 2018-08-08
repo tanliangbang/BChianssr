@@ -1,14 +1,14 @@
 <template>
   <section class="login mainMg">
       <div v-bind:style="{minHeight: this.$store.getters.getMinHeight}">
-           <form class="login_form" v-on:keyup="onPageDown">
+           <form class="login_form" v-on:keyup="onPageDown" autoComplete="off">
              <p>{{$t("lang.form.loginTitle")}}</p>
              <div class="nomalInput">
-               <input v-model="loginForm.phone" type="text" autocomplete='off' :placeholder="$t('lang.form.phonePrompt')" v-on:focus="showDel('phone')" v-on:blur="checkPhone()"/>
+               <input  v-model="loginForm.phone"  ref="phone" type="text"  :placeholder="$t('lang.form.phonePrompt')" v-on:focus="showDel('phone')" v-on:blur="checkPhone()"/>
                <i :class="rules.phone.class" v-on:click="delContent('phone')" >{{rules.phone.message}}</i>
              </div>
              <div class="nomalInput password">
-               <input v-model="loginForm.password"  autoComplete="off" :placeholder="$t('lang.form.passPrompt')" v-on:focus="showDel('password')" v-on:blur="checkPassword()" :type="isShowpass?'text':'password'"/>
+               <input   v-model="loginForm.password"   :placeholder="$t('lang.form.passPrompt')" v-on:focus="showDel('password')" v-on:blur="checkPassword()" :type="isShowpass?'text':'password'"/>
                <i :class="rules.password.class"  v-on:click="delContent('password')">{{rules.password.message}}</i>
                <i v-on:click="showpass()" :class="isShowpass?'showpass':'hidepass'"></i>
              </div>
@@ -63,17 +63,25 @@ export default {
     }
   },
   created () {
-
   },
   mounted () {
     this.initDate()
+    setTimeout(() => {
+      this.isShow = true
+    }, 1000)
   },
   methods: {
     async initDate () {
+      this.button_status = 1
       let data = await api.getGreetest()
       data = data.data
       let _this = this
       FormFun.initGreetest(_this, data, function (captchaObj) {
+        if (_this.checkPhone(true) && _this.checkPassword(true)) {
+          _this.button_status = 2
+        } else {
+          _this.button_status = 0
+        }
         _this.captchaObj = captchaObj
         captchaObj.onSuccess(function () {
           let result = captchaObj.getValidate()
@@ -144,7 +152,9 @@ export default {
       this.$router.push('/') */
       if (this.button_status === 2 && this.checkPhone(true) && this.checkPassword(true)) {
         this.button_status = 0
-        this.captchaObj.verify()
+        if (this.captchaObj) {
+          this.captchaObj.verify()
+        }
       }
     },
     showError () {

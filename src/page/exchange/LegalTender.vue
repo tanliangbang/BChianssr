@@ -40,20 +40,18 @@
            </tbody>
          </table>
          <div>
-            <span>{{$t("lang.common.prePage")}}</span>
-            <span>06/10</span>
-            <span>{{$t("lang.common.nextPage")}}</span>
+           <Pagination ref="businessPagination" v-bind:pagination = "businessPagination"/>
          </div>
        </div>
 
        <div class="myOrder">
-         <header>
+         <div>
            <span>{{$t("lang.otc.myOrder")}}</span>
            <div class="search">
              <input type="text" placeholder="订单号/日期/状态/对手方">
              <button>{{$t("lang.otc.search")}}</button>
            </div>
-         </header>
+         </div>
 
          <table border="0" cellpadding="0" cellspacing="0">
            <thead>
@@ -83,6 +81,9 @@
              </tr>
            </tbody>
          </table>
+         <div>
+           <Pagination ref="orderPagination" v-bind:pagination = "orderPagination"/>
+         </div>
        </div>
      </section>
   </div>
@@ -91,23 +92,41 @@
 <script>
 import * as api from '../../service/getData'
 import Tool from '../../utils/Tool'
+import Pagination from '../../plugins/pagination/Pagination'
 export default {
   name: 'LegalTender',
   components: {
+    Pagination
   },
   data () {
     return {
       currType: 'BUY',
       businessesList: null,
-      myOtcOrderList: null
+      myOtcOrderList: null,
+      orderPagination: {
+        current: 1,
+        total: 0,
+        pageSize: 10,
+        totalSize: 0,
+        onShowSizeChange: this.getMyOtcOrderList,
+        onChange: null
+      },
+      businessPagination: {
+        current: 1,
+        total: 0,
+        pageSize: 10,
+        totalSize: 0,
+        onShowSizeChange: this.getBusinessesList,
+        onChange: null
+      }
     }
   },
   created () {
-    this.getBusinessesList()
-    this.getMyOtcOrderList()
   },
   mounted () {
     window.scrollTo(0, 0)
+    this.$refs.businessPagination.toPage(1)
+    this.$refs.orderPagination.toPage(1)
   },
   methods: {
     makeOrder (item) {
@@ -119,12 +138,22 @@ export default {
       Tool.localItem('makeOrderParam', JSON.stringify(makeOrderParam))
       this.$router.push('makeOrder')
     },
-    async getBusinessesList () {
-      let data = await api.getOrderList({type: this.currType, quoteCurrency: 'bitcny', pageIndex: 0, pageSize: 10})
+    async getBusinessesList (currpage, pageSize) {
+      let data = await api.getOrderList({
+        type: this.currType,
+        quoteCurrency: 'bitcny',
+        pageSize: pageSize,
+        pageIndex: (currpage - 1) * pageSize
+      })
+      this.businessPagination.totalSize = data.total
       this.businessesList = data.data
     },
-    async getMyOtcOrderList() {
-      let myOtcOrderList = await api.myOtcOrderList()
+    async getMyOtcOrderList(currpage, pageSize) {
+      let myOtcOrderList = await api.myOtcOrderList({
+        pageSize: pageSize,
+        pageIndex: (currpage - 1) * pageSize
+      })
+      this.orderPagination.totalSize = myOtcOrderList.total
       myOtcOrderList = myOtcOrderList.data
       for (let i = 0; i < myOtcOrderList.length; i++) {
         myOtcOrderList[i].createAt = Tool.formatDate2(myOtcOrderList[i].createAt, '/')

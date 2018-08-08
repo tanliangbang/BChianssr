@@ -5,72 +5,49 @@
              <a v-on:click="changeStatus(1)" :class="status===1?'selected':''">{{$t("lang.entrustManage.processContracts")}}</a>
              <a v-on:click="changeStatus(2)" :class="status===2?'selected':''">{{$t("lang.entrustManage.historyContracts")}}</a>
          </div>
-        <div class="opera">
+        <div class="search">
            <input type="checkbox">{{$t("lang.entrustManage.onlyShowFinished")}}
            <input type="text">
            <button>{{$t("lang.entrustManage.search")}}</button>
         </div>
       </div>
+      <EntrustList ref="entrustList" v-bind:pagination = 'pagination' v-bind:entrustList = 'entrustList'/>
 
-      <table cellspacing="0" class="entrustTable">
-        <thead>
-          <tr>
-            <th width="13%">{{$t("lang.entrustManage.time")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.direction")}}</th>
-            <th width="10%"> {{$t("lang.entrustManage.coinType")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.price")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.volume")}}</th>
-            <th width="11%">{{$t("lang.entrustManage.contractValue")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.status")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.averagePrice")}}</th>
-            <th width="10%">{{$t("lang.entrustManage.exchange")}}</th>
-            <th width="6%">{{$t("lang.entrustManage.control")}}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="entrustList!==null" v-for="item in entrustList">
-            <td>{{item.createdAt}}</td>
-            <td>{{item.symbol.toUpperCase()}}</td>
-            <td :class="item.type === 'BUY_MARKET' || item.type === 'BUY_LIMIT' ? 'buyColor':'sellColor'">{{item.typeChina}}</td>
-            <td>{{item.type.split('_')[1] === 'MARKET'?'无':item.price}}</td>
-            <td>{{item.type.split('_')[1] === 'MARKET'?'无':item.amount}}</td>
-            <td>{{decimal(item.price, item.amount, 'mul')}}</td>
-            <td>{{item.stateStr}}</td>
-            <td>{{item.state==='PARTIAL_FILLED' || item.state==='FILLED' ? item.fieldCashAmount/item.fieldAmount : '无'}}</td>
-            <td>{{item.bilianHisName}}</td>
-            <td>
-              <a v-if="item.state!=='FILLED'&&item.state!=='CANCELED'" class="opera" v-on:click="cancelEntrust(item)">撤销</a>
-              <a v-if="item.state==='FILLED'||item.state==='CANCELED'" >撤销</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
   </div>
 </template>
 
 <script>
 import * as api from '../../service/getData'
 import Tool from '../../../src/utils/Tool'
+import EntrustList from '../../components/entrust/EntrustList'
 export default {
   name: 'EntrustManage',
   components: {
+    EntrustList
   },
   data () {
     return {
       status: 1,
-      entrustList: null
+      entrustList: null,
+      pagination: {
+        current: 1,
+        total: 0,
+        totalSize: 0,
+        onShowSizeChange: this.getCurrDate,
+        onChange: null
+      }
     }
   },
   created () {
-    this.init()
   },
   mounted () {
     window.scrollTo(0, 0)
+    this.$refs.entrustList.toPage(1)
   },
   methods: {
     changeStatus (num) {
       this.status = num
-      this.init()
+      this.$refs.entrustList.toPage(1)
     },
     decimal (a, b, opera) {
       if (a > 0 && b > 0) {
@@ -79,9 +56,11 @@ export default {
         return '无'
       }
     },
-    async init () {
+    async getCurrDate(currpage, pageSize) {
       let param = {
-        types: 'BUY_MARKET,SELL_MARKET,BUY_LIMIT,SELL_LIMIT'
+        types: 'BUY_MARKET,SELL_MARKET,BUY_LIMIT,SELL_LIMIT',
+        pageSize: pageSize,
+        pageIndex: (currpage - 1) * pageSize
       }
       if (this.status === 1) {
         param.states = 'NEW,PARTIAL_FILLED'
@@ -89,6 +68,7 @@ export default {
         param.states = 'FILLED,CANCELED'
       }
       let entrustList = await api.getEntrustListAll(param)
+      this.pagination.totalSize = entrustList.total
       entrustList = entrustList.data
       let state, way
       for (let i = 0; i < entrustList.length; i++) {
@@ -97,8 +77,29 @@ export default {
         way = entrustList[i].type
         entrustList[i].typeChina = Tool.buyAndSellChange(way)
         entrustList[i].stateStr = Tool.stateChange(state)
+        console.log(entrustList[i].price, entrustList[i].amount)
+        entrustList[i].totalPrice = Tool.decimal(entrustList[i].price, entrustList[i].amount, 'mul')
+        if (entrustList.state === 'PARTIAL_FILLED' || entrustList.state === 'FILLED') {
+          entrustList[i].averagePrice = Tool.decimal(entrustList.fieldCashAmount, entrustList.fieldAmount, 'mul')
+        } else {
+          entrustList[i].averagePrice = '--'
+        }
       }
       this.entrustList = entrustList
+    },
+    async cancelEntrust(item) {
+      let data = await api.cancelEntrust({
+        bilianHisId: item.bilianHisId,
+        bilianOrderId: item.bilianOrderId,
+        hisOrderId: item.orderId,
+        symbol: item.symbol
+      })
+      if (data.status === 200) {
+        item.stateStr = '已撤销'
+        item.state = 'CANCELED'
+      } else {
+        this.$prompt.error(data.message)
+      }
     }
   }
 }
@@ -113,6 +114,7 @@ export default {
     .header {
       border-bottom: 1px solid #4177fc;
       height:50px;
+      margin-bottom:20px;
       > div:nth-child(1) {
         width: 369px;
         height: 50px;
@@ -139,7 +141,7 @@ export default {
           cursor: pointer;
         }
       }
-      .opera{
+      .search{
         float:right;
         input[type^="checkbox"]{
           content:'';
@@ -164,7 +166,7 @@ export default {
           width:22px;
           height:22px;
           position:absolute;
-        //  background:url('../../../static/img/checked.png')
+          background:url('../../../static/img/checked.png')
         }
         input[type^="text"]{
           width: 216px;
@@ -188,5 +190,8 @@ export default {
       }
     }
   }
-
+  .opera{
+    color:@click_color;
+    cursor:pointer;
+  }
 </style>

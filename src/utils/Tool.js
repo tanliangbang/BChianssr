@@ -28,6 +28,12 @@ Tool.formatDate1 = function (str) {
 }
 
 Tool.decimal = function (a, b, opera) {
+  if (!a) {
+    a = 0
+  }
+  if (!b) {
+    b = 0
+  }
   if (opera === 'add') { // 加法
     return new Decimal(a).add(new Decimal(b)).toNumber()
   }

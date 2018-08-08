@@ -119,12 +119,12 @@ export default {
   },
   methods: {
     countPrice () {
+      this.number = Tool.numberCheck(this.number, 15)
       if (this.number === '') {
         this.price = ''
         return
       }
-      let number = parseFloat(this.number)
-      this.price = Tool.decimal(number, this.currBusinesses.price, 'mul')
+      this.price = Tool.decimal(this.number, this.currBusinesses.price, 'mul')
       this.judgeError()
     },
     async getAssert() {
@@ -140,12 +140,12 @@ export default {
       }
     },
     countNumber () {
+      this.price = Tool.numberCheck(this.price, 15)
       if (this.price === '') {
         this.number = ''
         return
       }
-      let price = parseFloat(this.price)
-      this.number = Tool.decimal(price, this.currBusinesses.price, 'div')
+      this.number = Tool.decimal(this.price, this.currBusinesses.price, 'div')
       this.judgeError()
     },
     all () {

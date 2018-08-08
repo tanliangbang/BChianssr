@@ -95,7 +95,7 @@ export default {
           let currNode = _this.$refs.send
           currNode.className = 'button-loading'
           currNode.innerHTML = ''
-          api.resetSendSMS(result).then(function (res) {
+          api.changePassOrEmailSendSMS(result).then(function (res) {
             currNode.className = ''
             if (res.status === 200) {
               _this.tokenId = res.data.tokenId

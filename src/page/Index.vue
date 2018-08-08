@@ -33,7 +33,7 @@
 
     <section>
       <div class="header">
-        <span v-for="(item, key) in exchangeCoinList" :key='key' :class="currQuoteCoin===key?'selected':''" v-on:click="toChange(key)">{{key.toUpperCase()}}</span>
+        <span v-for="(item, key) in coinList" :key='key' :class="currQuoteCoin===key?'selected':''" v-on:click="toChange(key)">{{key.toUpperCase()}}</span>
         <span :class="currQuoteCoin==='all'?'selected':''" v-on:click="toChange('all')">{{$t("lang.index.all")}}</span>
       </div>
       <div>
@@ -128,23 +128,18 @@ export default {
       allCoinList: 'getCoinList'
     })
   },
-  async created () {
+  created () {
+    this.coinList = this.allCoinList
+  },
+  async mounted () {
+    window.scrollTo(0, 0)
     socketUtil.addTick = this.addTick
     socketUtil.getTick = this.getTick
-    let symbols = await api.getAllSymobl()
-    this.exchangeCoinList = symbols.data
     if (this.exchangeList.length <= 0) {
       await this.$store.dispatch('getExchangelist')
     }
-    if (JSON.stringify(this.allCoinList) === '{}') {
-      await this.$store.dispatch('getCoinList')
-    }
-    this.coinList = this.allCoinList
     this.getTick()
     this.initDate()
-  },
-  mounted () {
-    window.scrollTo(0, 0)
   },
   methods: {
     toDetail (symbol, exchangeId) {
@@ -216,6 +211,10 @@ export default {
       socketUtil.subscribefn(this.subscribed[i])
     }
     this.subscribed = []
+  },
+  async asyncData(context) {
+    let store = context.store
+    return store.dispatch('getCoinList')
   }
 }
 </script>

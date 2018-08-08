@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div class="coinToCoin mainMg">
     <section>
 
@@ -51,41 +51,7 @@
             </div>
           </div>
 
-          <div>
-            <table cellspacing="0" class="entrustTable">
-              <thead>
-              <tr>
-                <th width="13%">{{$t("lang.entrustManage.time")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.direction")}}</th>
-                <th width="10%"> {{$t("lang.entrustManage.coinType")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.price")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.volume")}}</th>
-                <th width="11%">{{$t("lang.entrustManage.contractValue")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.status")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.averagePrice")}}</th>
-                <th width="10%">{{$t("lang.entrustManage.exchange")}}</th>
-                <th width="6%">{{$t("lang.entrustManage.control")}}</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-if="entrustList!==null" v-for="item in myEntrustList">
-                <td>{{item.createdAt}}</td>
-                <td>{{item.symbol.toUpperCase()}}</td>
-                <td :class="item.type === 'BUY_MARKET' || item.type === 'BUY_LIMIT' ? 'buyColor':'sellColor'">{{item.typeChina}}</td>
-                <td>{{item.type.split('_')[1] === 'MARKET'?'无':item.price}}</td>
-                <td>{{item.type.split('_')[1] === 'MARKET'?'无':item.amount}}</td>
-                <td>{{decimal(item.price, item.amount, 'mul')}}</td>
-                <td>{{item.stateStr}}</td>
-                <td>{{item.state==='PARTIAL_FILLED' || item.state==='FILLED' ? decimal(item.fieldCashAmount, item.fieldAmount, 'mul') : '无'}}</td>
-                <td>{{item.bilianHisName}}</td>
-                <td>
-                  <a v-if="item.state!=='FILLED'&&item.state!=='CANCELED'" class="opera" v-on:click="cancelEntrust(item)">撤销</a>
-                  <a v-if="item.state==='FILLED'||item.state==='CANCELED'" >撤销</a>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
+          <EntrustList ref="myEntrustListRef" v-bind:pagination = 'pagination' v-bind:entrustList = 'myEntrustList' />
 
         </div>
       </div>
@@ -101,12 +67,14 @@
   import Tool from '../../utils/Tool'
   import { mapGetters } from 'vuex'
   import socketUtil from '../../utils/socketUtil'
+  import EntrustList from '../../components/entrust/EntrustList'
   export default {
     name: 'CoinToCoin',
     components: {
       KeyLine,
       CurrEntrustList,
-      Entrust
+      Entrust,
+      EntrustList
     },
     computed: {
       ...mapGetters({
@@ -123,7 +91,15 @@
         wsList: {},
         preCoin: null,
         preExchangeId: null,
-        unSubscribes: []
+        unSubscribes: [],
+        pagination: {
+          current: 1,
+          total: 0,
+          pageSize: 10,
+          totalSize: 0,
+          onShowSizeChange: this.getMyEntrustList,
+          onChange: null
+        }
       }
     },
     async created () {
@@ -156,7 +132,7 @@
         currCoin: null
       }
       if (this.currInfo.exchangeId >= 0) {
-        this.getMyEntrustList()
+        this.$refs.myEntrustListRef.toPage(1)
       }
       await this.getTick()
     },
@@ -219,23 +195,29 @@
           item.stateStr = '已撤销'
           item.state = 'CANCELED'
           this.$refs.entrust.getUserAsset()
+        } else {
+          this.$prompt.error(data.message)
         }
       },
       decimal (a, b, opera) {
         return Tool.decimal(a, b, opera)
       },
-      async getMyEntrustList() {
+      async getMyEntrustList(currpage, pageSize) {
+        let pageIndex = (currpage - 1) * pageSize
         let data = await api.getEntrustListBySymbol({
           bilianHisId: this.currInfo.exchangeId,
           symbol: this.currInfo.baseCoin + this.currInfo.quoteCoin,
           states: 'NEW,PARTIAL_FILLED,FILLED,CANCELED',
-          types: 'BUY_MARKET,SELL_MARKET,BUY_LIMIT,SELL_LIMIT'
+          types: 'BUY_MARKET,SELL_MARKET,BUY_LIMIT,SELL_LIMIT',
+          pageSize: pageSize,
+          pageIndex: pageIndex
         })
         if (data.status !== 200) {
           this.myEntrustList = []
           return
         }
         let myEntrustList = data.data
+        this.pagination.totalSize = data.total
         let way, state
         for (let i = 0; i < myEntrustList.length; i++) {
           myEntrustList[i].createdAt = Tool.formatDate2(myEntrustList[i].createdAt, '/')
@@ -243,6 +225,13 @@
           way = myEntrustList[i].type
           myEntrustList[i].typeChina = Tool.buyAndSellChange(way)
           myEntrustList[i].stateStr = Tool.stateChange(state)
+          console.log(myEntrustList[i].price, myEntrustList[i].amount)
+          myEntrustList[i].totalPrice = Tool.decimal(myEntrustList[i].price, myEntrustList[i].amount, 'mul')
+          if (myEntrustList.state === 'PARTIAL_FILLED' || myEntrustList.state === 'FILLED') {
+            myEntrustList[i].averagePrice = Tool.decimal(myEntrustList.fieldCashAmount, myEntrustList.fieldAmount, 'mul')
+          } else {
+            myEntrustList[i].averagePrice = '--'
+          }
         }
         this.myEntrustList = myEntrustList
       },
@@ -308,7 +297,7 @@
         })
         this.$refs.entrust.changeAssert()
         this.$refs.keyLine.changeSymbol(symbol, this.currInfo.exchangeId)
-        this.getMyEntrustList()
+        this.$refs.myEntrustListRef.toPage(1)
       },
       changeEntrustList (msg) {
         this.entrustList = msg.tick
@@ -350,7 +339,7 @@
                   this.currInfo.currCoin = exchangeList[i]
                 }
               }
-              this.getMyEntrustList()
+              this.$refs.myEntrustListRef.toPage(1)
               this.$refs.entrust.changeAssert()
               for (let i = 0; i < this.exchangeList.length; i++) {
                 if (this.exchangeList[i].exchange_id === this.currInfo.exchangeId) {
@@ -371,8 +360,6 @@
                   if (this.$refs.keyLine) {
                     this.$refs.keyLine.changeSymbol(this.currInfo.symbol, this.currInfo.exchangeId)
                   }
-                  // let symbol = this.currInfo.baseCoin + '_' + this.currInfo.quoteCoin
-                  // this.$router.push('coinToCoin?symbol=' + symbol + '&exchangeId=' + this.currInfo.exchangeId)
                 }
               }
             }
@@ -422,7 +409,7 @@
       margin-top:25px;
       width:100%;
       position:relative;
-      height:1880px;
+      height:1920px;
       .coin-list{
         width:345px;
         background:@bg_color;
@@ -431,7 +418,7 @@
         top:0px;
         background:@bg_color;
         >ul{
-          height:1830px;
+          height:1860px;
           width:100%;
           overflow-y: auto;
           li{
@@ -604,6 +591,7 @@
 
   .buy-input-list{
     margin-top:20px;
+    margin-bottom:20px;
     >div:nth-child(1) {
       float:left;
       width:54%;
@@ -627,7 +615,7 @@
   .entrustList{
     width:100%;
     background:@bg_color;
-    margin-top:20px;
+    margin-top:0px;
     thead{
       td{
         border-bottom:2px solid @index_bg;
