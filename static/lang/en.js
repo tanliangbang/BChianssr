@@ -227,7 +227,8 @@ export const lang = {
     addSuccess: 'Add Success',
     examine: 'Examine',
     autherSubmited: 'The data has been submitted and the audit will take about 3 minutes',
-    authered: 'Your identity authentication has been completed'
+    authered: 'Your identity authentication has been completed',
+    authorize: 'Authorize'
   },
   form: {
     loginTitle: 'Log in with Bilian account',

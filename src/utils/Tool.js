@@ -283,4 +283,33 @@ Tool.changeOtcStatus = function(state) {
   return temp
 }
 
+Tool.dealAsser = function(userInfo, currInfo, currAssert) {
+  let obj = {}
+  let exchagneAthers = userInfo.openExchangeAccount
+  for (let i = 0; i < exchagneAthers.length; i++) {
+    if (currInfo.exchangeId === exchagneAthers[i]['exchange_id']) {
+      obj.currStatus = exchagneAthers[i].authStatus
+      if (obj.currStatus === 1) {
+        let data = currAssert.exchanges
+        let len = data.length
+        let list
+        for (let i = 0; i < len; i++) {
+          if (parseInt(data[i].bilianHisId) === currInfo.exchangeId) {
+            list = data[i]
+          }
+        }
+        if (list) {
+          let asset = list.hisUserBalanceCurrencyList
+          len = asset.length
+          obj.currExchangeAssert = {}
+          for (let i = 0; i < len; i++) {
+            obj.currExchangeAssert[asset[i].currency] = asset[i]
+          }
+        }
+      }
+    }
+  }
+  return obj
+}
+
 export default Tool

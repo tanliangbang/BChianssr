@@ -9,10 +9,10 @@ module.exports = {
   baseUrl: FaceUrl,
   client: {
     baseurl: '/',
-    timeout: 10000
+    timeout: 30000
   },
   server: {
     baseurl: FaceUrl + '/',
-    timeout: 10000
+    timeout: 30000
   }
 }

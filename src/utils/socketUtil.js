@@ -15,9 +15,6 @@ socketUtil.createConnet = function(_this, exchange, callback) {
     return
   }
   let api = exchange['websocket_api']
-  /* if (exchange['en_name'] !== 'tokencan') {
-    api = 'wss://api.cointiger.pro/exchange-market/ws'
-  } */
   let cointigerWs = new window.WebSocket(api)
   cointigerWs.onopen = () => {
     callback(cointigerWs)

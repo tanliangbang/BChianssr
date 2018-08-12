@@ -1,5 +1,5 @@
 <template>
-  <div class="legalTender mainMg">
+  <div class="legalTender mainMg" v-bind:style="{minHeight: this.$store.getters.getMinHeight}">
      <section>
        <header>
            <div>

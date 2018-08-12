@@ -66,9 +66,7 @@ export default {
   },
   mounted () {
     this.initDate()
-    setTimeout(() => {
-      this.isShow = true
-    }, 1000)
+    window.scrollTo(0, 0)
   },
   methods: {
     async initDate () {
@@ -92,7 +90,11 @@ export default {
           api.accounts(result).then(function (res) {
             if (res.status === 200) {
               _this.$store.dispatch('setUserInfo', res.data.userinfo)
-              _this.$router.push('/')
+              if (Tool.localItem('backUrl')) {
+                _this.$router.push(Tool.localItem('backUrl'))
+              } else {
+                _this.$router.push('/')
+              }
             } else {
               _this.$prompt.error(_this.$t('lang.errorPrompt.' + res.message))
               _this.ispass = true
@@ -161,6 +163,9 @@ export default {
       this.error = true
       this.errorMessage = this.$t('lang.form.pleaseLoginInfo')
     }
+  },
+  destroyed: function () {
+    Tool.removeLocalItem('backUrl')
   }
 }
 </script>

@@ -8,7 +8,7 @@
         <router-link to="/home">{{$t("lang.header.market")}}</router-link>
       </dl>
       <dl>
-        <router-link to="/coinToCoin/btc_usdt">{{$t("lang.header.exchange")}}</router-link>
+        <router-link to="/coinToCoin/eth_btc">{{$t("lang.header.exchange")}}</router-link>
       </dl>
       <dl>
         <router-link to="/legalTender">{{$t("lang.header.otc")}}</router-link>
@@ -24,12 +24,12 @@
            <a v-on:click="changeLang('en')">English</a>
         </div>
     </div>
-     <ul v-if="this.$store.state.user.userInfo !== null">
+     <ul v-if="userInfo !== null">
        <li><router-link to="/entrustManage">{{$t("lang.header.contractManage")}}</router-link></li>
        <li><router-link to="/assetManage">{{$t("lang.header.assetsManage")}}</router-link></li>
-       <li><router-link to="/userCenter">{{this.$store.state.user.userInfo.mobile}}</router-link></li>
+       <li><router-link to="/userCenter">{{userInfo.mobile}}</router-link></li>
      </ul>
-    <ul v-if="this.$store.state.user.userInfo === null">
+    <ul v-if="userInfo === null">
       <li> <router-link to="/login">{{$t("lang.header.login")}}</router-link></li>
       <li><router-link to="/regist">{{$t("lang.header.regist")}}</router-link></li>
     </ul>
@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
   name: 'Header',
   data () {
@@ -46,7 +47,13 @@ export default {
       currStr: 'cn'
     }
   },
-  mounted () {
+  computed: {
+    ...mapGetters({
+      userInfo: 'getUserInfo'
+    })
+  },
+  created () {
+    this.$store.dispatch('getUserInfo')
   },
   methods: {
     toggerLang () {

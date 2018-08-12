@@ -1,39 +1,39 @@
 <template>
   <div class="assetManage mainMg" v-bind:style="{minHeight: this.$store.getters.getMinHeight}">
     <RechargeAndEnchashment ref="reEn"/>
-    <div class="asset-header">
+    <div class="asset-header" v-if="currAssert">
       <div>
         <div>{{$t("lang.assertManage.today")}}</div>
         <div>
-          <span class="raise">+9.12%</span>
-          <span>0.0122566BTC</span>
+          <span class="raise">{{currAssert.allExchangesTodayRange * 100}}%</span>
+          <span>{{currAssert.allExchangesTodayAsserts}}</span>
         </div>
         <div>{{$t("lang.assertManage.sumProfit")}}</div>
         <div>
-          <span class="raise">+15.56%</span>
-          <span>0.0122566BTC</span>
+          <span class="raise">{{currAssert.allExchangesRange * 100}}%</span>
+          <span>{{currAssert.allExchangesChange}}</span>
         </div>
       </div>
 
       <div>
-         <span>1234.2454BTC</span>
+         <span>{{currAssert.allExchangesAsserts}}</span>
          <span>~254665585.23 CNY</span>
          <span>{{$t("lang.assertManage.totalAccount")}}</span>
       </div>
     </div>
 
     <div class="asset-coin-list">
-      <div>
+      <div v-if="currAssert&&currExchange!==null">
         <ul>
           <li>{{$t("lang.assertManage.tradeAccount")}}</li>
-          <li v-for="(item, index) in currList" v-on:click="changeExchange(item.bilianHisId)" :class="currExchange.bilianHisId===item.bilianHisId?'selected':'pointer'" :key="index">{{item.bilianHisName}}</li>
+          <li v-for="(item, index) in currAssert['exchanges']" v-on:click="changeExchange(item.bilianHisId)" :class="currExchange.bilianHisId===item.bilianHisId?'selected':'pointer'" :key="index">{{item.bilianHisName}}</li>
         </ul>
       </div>
 
       <div class="scrollStyle">
           <div v-if="currExchange!==null" >
             <span>{{currExchange.bilianHisName}}</span>
-            <span><i>{{$t("lang.assertManage.today")}}</i> 934.254BTC</span>
+            <span><i>{{$t("lang.assertManage.today")}}</i> {{currExchange.todayHisRange}}</span>
             <span><i>{{$t("lang.assertManage.assets")}}</i> {{currExchange.totalAssert}}</span>
             <span><router-link to="financeRecord">{{$t("lang.assertManage.financialRecord")}}</router-link></span>
           </div>
@@ -48,7 +48,7 @@
 
 <script>
 import RechargeAndEnchashment from './model/RechargeAndEnchashment'
-import * as api from '../../service/getData'
+import { mapGetters } from 'vuex'
 export default {
   name: 'AssetManage',
   components: {
@@ -56,12 +56,17 @@ export default {
   },
   data () {
     return {
-      currList: null,
       currExchange: null
     }
   },
-  created () {
-    this.init()
+  computed: {
+    ...mapGetters({
+      currAssert: 'getUserassert'
+    })
+  },
+  async created () {
+    await this.$store.dispatch('getUserassert')
+    this.currExchange = this.currAssert.exchanges[0]
   },
   mounted () {
     window.scrollTo(0, 0)
@@ -74,17 +79,12 @@ export default {
       this.$refs.reEn.showEnRe(2)
     },
     changeExchange(id) {
-      let len = this.currList.length
+      let len = this.currAssert.exchanges.length
       for (let i = 0; i < len; i++) {
-        if (this.currList[i].bilianHisId === id) {
-          this.currExchange = this.currList[i]
+        if (this.currAssert.exchanges[i].bilianHisId === id) {
+          this.currExchange = this.currAssert.exchanges[i]
         }
       }
-    },
-    async init () {
-      let data = await api.getUserAsset()
-      this.currList = data.data
-      this.currExchange = this.currList[0]
     }
   }
 }

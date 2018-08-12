@@ -21,11 +21,10 @@ export default {
     Header,
     Footer
   },
-  computed: {
+  async created() {
   },
-  mounted () {
+  async mounted () {
     let currheight = 0
-    this.$store.dispatch('getUserInfo')
     currheight = document.documentElement.clientHeight - 336
     currheight = currheight > 500 ? (currheight + 'px') : '500px'
     this.$store.dispatch('setMinHeight', currheight)

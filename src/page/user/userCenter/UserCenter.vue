@@ -1,10 +1,11 @@
-<template>
+            <template>
   <div class="userCenter mainMg" v-bind:style="{minHeight: this.$store.getters.getMinHeight}">
       <section>
         <div class="nav">
           <a v-on:click="change('userInfo')" :class="nav==='userInfo'?'selected':'unselect'">{{$t("lang.userCenter.accountSecurity")}}</a>
           <a v-on:click="change('auther')" :class="nav==='auther'?'selected':'unselect'">{{$t("lang.userCenter.verification")}}</a>
           <a v-on:click="change('payWay')" :class="nav==='payWay'?'selected':'unselect'">{{$t("lang.userCenter.paymentMethod")}}</a>
+          <a v-on:click="change('authorize')" :class="nav==='authorize'?'selected':'unselect'">{{$t("lang.userCenter.authorize")}}</a>
         </div>
         <div v-if="nav==='userInfo'">
            <UserInfo :userInfo = "userInfo"/>
@@ -15,6 +16,9 @@
         <div v-if="nav==='payWay'" >
           <PayWay v-if="userInfo!==null" :userInfo = "userInfo"/>
         </div>
+        <div v-if="nav==='authorize'" >
+          <Authorize v-if="userInfo!==null" :userInfo = "userInfo"/>
+        </div>
       </section>
   </div>
 </template>
@@ -23,6 +27,7 @@
 import Auther from './Auther'
 import UserInfo from './UserInfo'
 import PayWay from './PayWay'
+import Authorize from './Authorize'
 import { mapGetters } from 'vuex'
 
 export default {
@@ -30,7 +35,8 @@ export default {
   components: {
     Auther,
     UserInfo,
-    PayWay
+    PayWay,
+    Authorize
   },
   data () {
     return {
@@ -64,7 +70,7 @@ export default {
 <style lang="less" scoped>
 @import "../../../style/common";
 .userCenter{
-  background:@bg_color;
+  // background:@bg_color;
   section{
     overflow:hidden;
     max-width:1200px;

@@ -1,24 +1,5 @@
 <template>
   <div v-if="currInfo.currCoin">
-    <div class="my-info">
-      <div>
-        <p>{{$t("lang.exchange.coinAsset")}}</p>
-        <p>{{$t("lang.exchange.total")}}:1234.565BTC</p>
-      </div>
-      <div v-if="currAsset">
-        <p>{{this.currInfo.baseCoin.toUpperCase()}} {{$t("lang.exchange.available")}} {{currAsset[this.currInfo.baseCoin.toUpperCase()]['trade']}}</p>
-        <p>{{this.currInfo.quoteCoin.toUpperCase()}} {{$t("lang.exchange.available")}} {{currAsset[this.currInfo.quoteCoin.toUpperCase()]['trade']}}</p>
-      </div>
-      <div v-if="!currAsset">
-        <p>{{this.currInfo.baseCoin.toUpperCase()}} {{$t("lang.exchange.available")}} 0</p>
-        <p>{{this.currInfo.quoteCoin.toUpperCase()}} {{$t("lang.exchange.available")}} 0</p>
-      </div>
-      <div>
-        <p><router-link to="legalTender">{{$t("lang.exchange.rechange")}}BTC</router-link></p>
-        <p><router-link to="legalTender">{{$t("lang.exchange.rechange")}}USDT</router-link></p>
-      </div>
-    </div>
-
     <div class="entrust">
       <div>
         <a :class="type==='limit'?'limit':'clickBtn'" v-on:click="changeType('limit')">{{$t("lang.exchange.limitOrder")}}</a>
@@ -27,11 +8,10 @@
             <div>
               <span>{{$t("lang.exchange.price")}}</span>
               <span >{{type!=='markt'?currInfo.quoteCoin.toUpperCase():''}}</span>
-              <input v-if="type!=='markt'" v-on:keyup="buyPriceKeyup()"  v-model="buy.price"/>
+              <input v-if="type!=='markt'" v-on:keyup="buyPriceKeyup($event)"  v-model="buy.price" />
               <input v-if="type==='markt'" class="gray" :value="$t('lang.exchange.martkPrompt')"/>
             </div>
-
-            <p>≈54254.355</p>
+            <p>≈{{decimal(buy.price, currRate, 'mul').toFixed(2)}} CNY</p>
           </div>
           <div class="praceInput">
             <div>
@@ -64,7 +44,7 @@
               <input v-if="type!=='markt'" v-on:keyup="sellPriceKeyup()"  v-model="sell.price"/>
               <input v-if="type==='markt'" class="gray"  :value="$t('lang.exchange.martkPrompt')"/>
             </div>
-            <p>≈54254.355</p>
+            <p>≈{{decimal(sell.price, currRate, 'mul').toFixed(2)}} CNY</p>
           </div>
           <div class="praceInput">
             <div>
@@ -101,7 +81,7 @@ export default {
   name: 'Entrust',
   components: {
   },
-  props: ['currInfo'],
+  props: ['currInfo', 'userInfo', 'currAssert'],
   data () {
     return {
       currList: null,
@@ -112,6 +92,10 @@ export default {
       buy_status: 0,
       totalSellPrice: 0,
       totalBuyPrice: 0,
+      rateList: null,
+      currRate: 1,
+      currStatus: 0,
+      currExchangeAssert: null,
       buy: {
         price: 0,
         number: 0
@@ -123,35 +107,33 @@ export default {
     }
   },
   created () {
-    this.getUserAsset()
   },
   methods: {
-    async getUserAsset () {
-      let data = await api.getUserAsset()
-      if (data.status === 200) {
-        this.currAssetList = data.data
-      }
-    },
-    changeAssert() {
+    changePrice() {
+      this.getRate(this.currInfo.exchangeId)
       this.sell.price = this.buy.price = this.currInfo.currCoin.tick.close
-      let data = this.currAssetList
-      let len = data.length
-      let list
-      for (let i = 0; i < len; i++) {
-        if (data[i].bilianHisId === this.currInfo.exchangeId + '') {
-          list = data[i]
-        }
+    },
+    async getRate (hisId) {
+      let data = await api.getRate({hisId: hisId})
+      if (data.status === 200) {
+        this.rateList = data.data
+        this.changeRate(hisId)
+      } else {
+        console.log(data.message)
       }
-      if (list) {
-        let asset = list.hisUserBalanceCurrencyList
-        len = asset.length
-        this.currAsset = {}
-        for (let i = 0; i < len; i++) {
-          this.currAsset[asset[i].currency] = asset[i]
+    },
+    changeRate () {
+      let str
+      let curr = this.rateList
+      let len = curr.length
+      for (let i = 0; i < len; i++) {
+        str = this.currInfo.quoteCoin.toUpperCase() + '_CNY'
+        if (curr[i].name === str) {
+          this.currRate = curr[i].rate
+          console.log(curr)
         }
       }
     },
-
     changeType(str) {
       this.type = str
       this.buy = {
@@ -166,7 +148,26 @@ export default {
     decimal (a, b, opera) {
       return Tool.decimal(a, b, opera)
     },
-    buyPriceKeyup () {
+    checkUserInfo() {
+      if (this.userInfo === null) {
+        return false
+      }
+      if (parseInt(this.userInfo.levelOneAuthStatus) !== 1) {
+        return false
+      }
+      let obj = Tool.dealAsser(this.userInfo, this.currInfo, this.currAssert)
+      if (obj.currStatus === 0) {
+        return false
+      }
+      let buyAvailable = obj['currExchangeAssert'][this.currInfo.quoteCoin.toUpperCase()].trade
+      let sellAvailable = obj['currExchangeAssert'][this.currInfo.baseCoin.toUpperCase()].trade
+      return {
+        buyAvailable: parseFloat(buyAvailable),
+        sellAvailable: parseFloat(sellAvailable)
+      }
+    },
+    buyPriceKeyup (event) {
+      this.buy.price = 0
       let limitPricePrecision = this.currInfo.currCoin.limitPricePrecision
       this.buy.price = Tool.numberCheck(this.buy.price, limitPricePrecision)
       this.keyBuyCheck()
@@ -187,21 +188,30 @@ export default {
       this.keysellCheck()
     },
     keyBuyCheck () {
+      let assert = this.checkUserInfo()
       this.totalBuyPrice = Tool.decimal(this.buy.price, this.buy.number, 'mul')
-      if (this.buy.number > 0 && this.buy.price > 0) {
-        this.buy_status = 2
+      if (this.buy.number > 0 && this.buy.price > 0 && assert) {
+        if (parseFloat(this.buy.number) < assert.buyAvailable) {
+          this.buy_status = 2
+        } else {
+          this.buy_status = 0
+        }
       }
     },
     keysellCheck () {
+      let assert = this.checkUserInfo()
       this.totalSellPrice = Tool.decimal(this.sell.price, this.sell.number, 'mul')
-      if (this.sell.number > 0 && this.sell.price > 0) {
-        this.sell_status = 2
+      if (this.sell.number > 0 && this.sell.price > 0 && assert) {
+        if (parseFloat(this.sell.number) < assert.sellAvailable) {
+          this.sell_status = 2
+        } else {
+          this.sell_status = 0
+        }
       }
     },
     async buyFn(str) {
       let symbol = this.currInfo.baseCoin + this.currInfo.quoteCoin
       let param
-      console.log(this.currInfo.currCoin)
       if (str === 'buy') {
         if (this.type === 'markt' && this.currInfo.currCoin.marketVolumeMin !== null) {
           if (this.totalBuyPrice < this.currInfo.currCoin.marketVolumeMin) {
@@ -242,7 +252,7 @@ export default {
       this.sell_status = 0
       if (data.status === 200) {
         this.getUserAsset()
-        this.$parent.getMyEntrustList()
+        this.$parent.$refs.myEntrustListRef.toPage(1)
       } else {
         this.$prompt.error(data.message)
       }
@@ -324,7 +334,7 @@ export default {
       }
     }
     p{
-      padding-left:99px;
+      padding-left:35px;
       color: #688bdb;
       font-size:14px;
       margin:7px 0 0 0;
@@ -418,35 +428,6 @@ export default {
     font-size: 16px;
     display:block;
     margin:10px auto 0px;
-  }
-}
-.my-info{
-  height:112px;
-  background:@bg_color;
-  display: flex;
-  flex-wrap: wrap-reverse;
-  >div{
-    padding-top:26px;
-    flex:1;
-    color:#fff;
-    >p:nth-child(2) {
-      margin-top:18px;
-    }
-  }
-  >div:nth-child(1){
-    padding-left:38px;
-  }
-  >div:nth-child(2) {
-    p{
-      text-align: center;
-    }
-  }
-  >div:nth-child(3) {
-    text-align: right;
-    padding-right:38px;
-    a{
-      color: #39f1ff;
-    }
   }
 }
 </style>

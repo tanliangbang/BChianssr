@@ -1,6 +1,7 @@
 import * as api from '../../service/getData'
 const state = {
   userInfo: null,
+  currUserAsset: null,
   loginHistory: []
 }
 
@@ -10,6 +11,9 @@ const mutations = {
   },
   SET_LOGIN_HISTORY: (state, data) => {
     state.loginHistory = data
+  },
+  SET_USERASSERT: (state, data) => {
+    state.currUserAsset = data
   }
 }
 
@@ -18,9 +22,22 @@ const actions = {
     commit('SET_USERINFO', userInfo)
   },
   getUserInfo: ({ state, commit }) => {
-    api.getUserInfo().then(function (res) {
+    if (state.userInfo !== null) {
+      return
+    }
+    return api.getUserInfo().then(function (res) {
       if (res.status === 200) {
         commit('SET_USERINFO', res.data.userinfo)
+      }
+    })
+  },
+  getUserassert: ({ state, commit }) => {
+    if (state.currUserAsset !== null) {
+      return
+    }
+    return api.getUserAsset().then(function (res) {
+      if (res.status === 200) {
+        commit('SET_USERASSERT', res.data)
       }
     })
   },
@@ -39,6 +56,9 @@ const getters = {
   },
   getLoginHistory: state => {
     return state.loginHistory
+  },
+  getUserassert: state => {
+    return state.currUserAsset
   }
 }
 

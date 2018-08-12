@@ -1,8 +1,9 @@
 <template>
-  <div :class="pagination.total>0?'pagination':'none'" >
+  <div>
+    {{dealTotalPage()}}
+    <div :class="pagination.total>0?'pagination':'none'" >
       <ul>
         <li ><a :class="pagination.current===1?'disabled':''" v-on:click="prePage">上一页</a></li>
-        {{dealTotalPage()}}
         <li>
           <a> {{pagination.current + '/' + pagination.total}}</a>
         </li>
@@ -20,6 +21,7 @@
         -->
         <li> <a :class="pagination.current===pagination.total?'disabled':''" v-on:click="nextPage">下一页</a></li>
       </ul>
+    </div>
   </div>
 </template>
 
@@ -47,6 +49,8 @@ export default {
         let pageSize = this.pagination.pageSize
         let total = totalSize % pageSize === 0 ? totalSize / pageSize : parseInt(totalSize / pageSize) + 1
         this.pagination.total = total
+      } else {
+        this.pagination.total = 0
       }
     },
     prePage () {

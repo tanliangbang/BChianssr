@@ -117,7 +117,7 @@
     }
   }
   >section:nth-child(3) {
-    background:@bg_color;
+    background:#243763;
     .header{
       font-size:0;
       >span{
@@ -136,10 +136,14 @@
     }
     .coin_list{
       width: 100%;
+      .cnyColor{
+        color:gray;
+      }
       thead{
         tr{
           height:60px;
           line-height: 60px;
+          background-color: #294586;
         }
         .triangle{
           display:inline-block;
@@ -165,9 +169,15 @@
           }
         }
       }
-
+      tbody{
+        tr:nth-child(even) {
+          background:#263C70;
+        }
+        tr:nth-child(odd) {
+          background:#243763;
+        }
+      }
       tr{
-        background:@table_bg;
         cursor: pointer;
         td:nth-child(1){
          padding-left:50px;
@@ -187,6 +197,7 @@
   width: 100%;
   thead{
     tr{
+      background:#284585;
       td:nth-child(2) {
         text-align: center;
       }
@@ -202,7 +213,6 @@
   }
   tr{
     height:60px;
-    background: @table_bg;
     cursor: pointer;
     td:nth-child(1) {
       text-align: right;
@@ -245,6 +255,11 @@
       float:right;
       text-align: right;
       padding-top:5px;
+      img{
+        width:20px;
+        height:20px;
+        border-radius: 50%;
+      }
       p:nth-child(2){
         font-size:16px;
         color:#4479f0;

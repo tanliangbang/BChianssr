@@ -51,7 +51,7 @@
             <tbody>
                 <tr v-if="allMarket !== null" v-for="item in allMarket" :key="item.id" >
                   <td>{{item["symbol"]}}</td>
-                  <td>${{item.quotes.USD["price"]}} / ￥{{item.quotes.CNY["price"]}}</td>
+                  <td>${{item.quotes.USD["price"]}} <span class="cnyColor">≈￥{{item.quotes.CNY["price"]}}</span></td>
                   <td>${{item.quotes.USD["market_cap"]}}</td>
                   <td>{{item.quotes.USD["volume_24h"]}}</td>
                   <td>{{item["circulating_supply"]}} {{item["symbol"]}}</td>
@@ -72,19 +72,17 @@
           <tbody>
           <tr  v-for="(item, key) in coinList[currQuoteCoin]" :key="item.id"   >
             <td>{{key.toUpperCase()+' / '+ currQuoteCoin.toUpperCase()}}</td>
-            <td  v-for="curr in item" v-if="curr.tick">
-              <div :class="curr.showAnimation?'exchange my_animation':'exchange'" v-on:click="toDetail(key.toLowerCase()+'_'+currQuoteCoin.toLowerCase(), curr.bilianHisId)">
+            <td  v-for="curr in item" >
+              <div v-if="curr.tick" :class="curr.showAnimation?'exchange my_animation':'exchange'" v-on:click="toDetail(key.toLowerCase()+'_'+currQuoteCoin.toLowerCase(), curr.bilianHisId)">
                 <div>
-                  {{curr.tick.close}}
+                  {{curr.tick.close?curr.tick.close: '--'}}
                 </div>
-                <div :class="curr.tick.rose<0?'red':'green'">
+                <div v-if="!curr.tick.close">--</div>
+                <div v-if="curr.tick.close" :class="curr.tick.rose<0?'red':'green'">
                   {{((curr.tick.rose)*100).toFixed(2)+ '%'}}
                 </div>
                 <div>
-                  <img v-if="curr.bilianHisName.toLowerCase()==='cointiger'" src="../../static/img/cointiger.png"/>
-                  <img v-if="curr.bilianHisName.toLowerCase()==='okex'" src="../../static/img/cointiger.png"/>
-                  <img v-if="curr.bilianHisName.toLowerCase()==='huobi'" src="../../static/img/cointiger.png"/>
-                  <img v-if="curr.bilianHisName.toLowerCase()==='tokencan'" src="../../static/img/tokencan.png"/>
+                  <img :src="curr.logo"/>
                   <p>{{curr.bilianHisName}}</p>
                 </div>
               </div>
@@ -139,7 +137,6 @@ export default {
       await this.$store.dispatch('getExchangelist')
     }
     this.getTick()
-    this.initDate()
   },
   methods: {
     toDetail (symbol, exchangeId) {
@@ -164,7 +161,7 @@ export default {
       }
       return false
     },
-    async initDate () {
+    async getAllMarkt () {
       let data = await api.getCoinList()
       if (data.status === 200) {
         data = data.data.data
@@ -173,7 +170,11 @@ export default {
     },
     toChange (str) {
       this.currQuoteCoin = str
-      socketUtil.subscribe(this, this.exchangeList, this.subscribed)
+      if (str === 'all') {
+        this.getAllMarkt()
+      } else {
+        socketUtil.subscribe(this, this.exchangeList, this.subscribed)
+      }
     },
     filter (index) {
       return index > 5
@@ -199,6 +200,7 @@ export default {
                 }, 500)
               }
               currCoinList[item][i].tick = msg.tick
+              currCoinList[item][i].logo = exchange.logo
             }
             this.coinList = Object.assign({}, this.coinList)
           }

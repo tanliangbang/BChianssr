@@ -3,8 +3,8 @@
     <section>
 
       <div class="coin-nav">
-        <span  :class="currSelect==='zx'?'selected':''">{{$t("lang.exchange.optional")}} </span>
-        <span v-for="(item, key) in coinList" :key="key" v-on:click="changeBase(key)" :class="currSelect===key?'selected':''">{{key.toUpperCase()}}</span>
+        <span  :class="currSelect==='zx'?'selected':''" v-on:click="changeBase('zx')">{{$t("lang.exchange.optional")}} </span>
+        <span v-for="(item, key) in allCoinList" v-if="key!=='zx'" :key="key" v-on:click="changeBase(key)" :class="currSelect===key?'selected':''">{{key.toUpperCase()}}</span>
       </div>
 
       <div class="container">
@@ -14,9 +14,12 @@
             <button>{{$t("lang.exchange.search")}}</button>
           </div>
           <ul v-if="currInfo" class="scrollStyle">
-            <li v-on:click="changeCoin(key, currSelect, null)" v-for="(item, key, index) in coinList[currSelect]" :class="currInfo.baseCoin===key&&currSelect===currInfo.quoteCoin?'selected':''" :key="index">
-              <span><img src="./../../../static/img/collectioned.png"/></span>
-              <span>{{key.toUpperCase()}}/{{currSelect.toUpperCase()}}</span>
+            <li v-on:click="changeCoin(key, item[0]['quoteCurrency'].toLowerCase(), null)" v-if="item[0]"
+                v-for="(item, key, index) in allCoinList[currSelect]"
+                :class="currInfo.baseCoin===key&&item[0]['quoteCurrency'].toLowerCase()===currInfo.quoteCoin?'selected':''" :key="index">
+              <span v-if="item[0].islike" v-on:click="collection($event, item, 'cut')"><img  src="./../../../static/img/collectioned.png"/></span>
+              <span v-if="!item[0].islike" v-on:click="collection($event, item, 'add')"><img  src="./../../../static/img/collection.png"/></span>
+              <span >{{key.toUpperCase()}}/{{item[0]['quoteCurrency'].toUpperCase()}}</span>
             </li>
           </ul>
         </div>
@@ -33,21 +36,29 @@
               <li v-on:click="changeExchange(item.bilianHisId)" :class="currInfo.exchangeId===item.bilianHisId?'selected':''" v-if="currInfo.exchangeList" v-for="(item, index) in currInfo.exchangeList" :key="index">
                 <div v-if="item.tick"> {{item.tick.close}}</div>
                 <div>
-                  <span>{{item.bilianHisName}}</span>
+                  <span><img :src="item.logo"> {{item.bilianHisName}}</span>
                   <span v-if="item.tick" :class= "item.tick.rose > 0?'raise':'fail'">{{((item.tick.rose)*100).toFixed(2)+ '%'}}</span>
                 </div>
               </li>
             </ul>
           </div>
-          <KeyLine ref="keyLine" v-if="currInfo.currCoin" v-bind:currInfo="currInfo"/>
+          <div class="keyLine">
+            <KeyLine ref="keyLine" v-if="currInfo.currCoin" v-bind:currInfo="currInfo"/>
+          </div>
 
           <div class="buy-input-list">
             <div>
-              <Entrust ref="entrust" v-bind:currInfo = 'currInfo' />
+              <div class="userAssert">
+                <div class="no_login" v-if="userInfo===null">
+                  请先" <a v-on:click="toLogin()">登入</a>"链一下,查看资产和交易
+                </div>
+                <CurrAssert ref="currAssert" v-if="userInfo!==null && currAssert" v-bind:currInfo = 'currInfo' v-bind:currAssert="currAssert"/>
+              </div>
+              <Entrust ref="entrust" v-bind:currAssert="currAssert" v-bind:userInfo="userInfo" v-bind:currInfo = 'currInfo' />
             </div>
 
-            <div>
-              <CurrEntrustList v-if="entrustList!==null&&currInfo.currCoin" v-bind:entrustList = 'entrustList' v-bind:currInfo = 'currInfo'/>
+            <div class="otherEntrustList">
+              <CurrEntrustList  v-bind:entrustList = 'entrustList' v-bind:currInfo = 'currInfo'/>
             </div>
           </div>
 
@@ -63,6 +74,7 @@
   import KeyLine from './model/KeyLine'
   import CurrEntrustList from './model/CurrEntrustList'
   import Entrust from './model/Entrust'
+  import CurrAssert from './model/CurrAssert'
   import * as api from '../../service/getData'
   import Tool from '../../utils/Tool'
   import { mapGetters } from 'vuex'
@@ -74,12 +86,15 @@
       KeyLine,
       CurrEntrustList,
       Entrust,
+      CurrAssert,
       EntrustList
     },
     computed: {
       ...mapGetters({
         exchangeList: 'getExchangeList',
-        coinList: 'getCoinList'
+        coinList: 'getCoinList',
+        currAssert: 'getUserassert',
+        userInfo: 'getUserInfo'
       })
     },
     data () {
@@ -88,10 +103,14 @@
         currInfo: {},
         entrustList: null,
         myEntrustList: [],
+        allCoinList: {},
         wsList: {},
         preCoin: null,
         preExchangeId: null,
         unSubscribes: [],
+        currUserAsset: {},
+        portfolioCoin: {},
+        collectionLoading: false,
         pagination: {
           current: 1,
           total: 0,
@@ -103,25 +122,27 @@
       }
     },
     async created () {
+      this.allCoinList = this.coinList
+    },
+    async mounted () {
       socketUtil.addTick = this.addTick
       socketUtil.addDepth = this.addDepth
       socketUtil.getTick = this.getTick
-      let baseCoin, quoteCoin, exchangeId, query
+      if (this.exchangeList.length <= 0) {
+        await this.$store.dispatch('getExchangelist')
+      }
+      let baseCoin, quoteCoin, exchangeId, query, exchangeList
       query = this.$route.params
       if (query.id) {
         baseCoin = query.id.split('_')[0]
         quoteCoin = query.id.split('_')[1]
+        exchangeList = this.allCoinList[quoteCoin][baseCoin]
         if (query.id.split('_')[2]) {
           exchangeId = parseInt(query.id.split('_')[2])
+        } else {
+          exchangeId = exchangeList[0].bilianHisId
         }
       }
-      if (JSON.stringify(this.coinList) === '{}') {
-        await this.$store.dispatch('getCoinList')
-      }
-      if (this.exchangeList.length <= 0) {
-        await this.$store.dispatch('getExchangelist')
-      }
-      let exchangeList = this.coinList[quoteCoin][baseCoin]
       this.currSelect = quoteCoin
       this.currInfo = {
         symbol: baseCoin + quoteCoin,
@@ -131,16 +152,72 @@
         exchangeList: exchangeList,
         currCoin: null
       }
-      if (this.currInfo.exchangeId >= 0) {
-        this.$refs.myEntrustListRef.toPage(1)
+      this.getTick()
+      await this.$store.dispatch('getUserInfo')
+      if (this.userInfo && this.userInfo !== null) {
+        this.getPortfolioCoin()
+        if (this.currInfo.exchangeId >= 0) {
+          this.$refs.myEntrustListRef.toPage(1)
+        }
+        await this.$store.dispatch('getUserassert')
+        this.$refs.currAssert.getAssert()
       }
-      await this.getTick()
-    },
-    mounted () {
     },
     methods: {
       addDepth (entrustList) {
         this.entrustList = entrustList
+      },
+      toLogin () {
+        this.$router.push('/login')
+        Tool.localItem('backUrl', this.$route.path)
+      },
+      async getPortfolioCoin() {
+        console.log(this.co)
+        let data = await api.getPortfolioCoin()
+        this.portfolioCoin = data.data
+        data = data.data
+        this.changePortfolioCoin(data)
+      },
+      changePortfolioCoin(data) {
+        let base, quote
+        this.allCoinList['zx'] = {}
+        for (let i = 0; i < data.length; i++) {
+          base = data[i].split('/')[0].toLowerCase()
+          quote = data[i].split('/')[1].toLowerCase()
+          this.allCoinList['zx'][base] = this.allCoinList[quote][base]
+          this.allCoinList[quote][base][0].islike = true
+        }
+      },
+      async collection(event, item, opera) {
+        Tool.stopProp(event)
+        if (this.collectionLoading) {
+          return
+        }
+        let curr = item[0].baseCurrency.toUpperCase() + '/' + item[0].quoteCurrency.toUpperCase()
+        if (opera === 'add') {
+          this.portfolioCoin.push(item[0].baseCurrency.toUpperCase() + '/' + item[0].quoteCurrency.toUpperCase())
+        } else {
+          for (let i = 0; i < this.portfolioCoin.length; i++) {
+            console.log(this.portfolioCoin[i])
+            if (this.portfolioCoin[i] === curr) {
+              this.portfolioCoin.splice(i, 1)
+            }
+          }
+        }
+        this.collectionLoading = true
+        let data = await api.collectionSymbol({portfolio: JSON.stringify(this.portfolioCoin)})
+        this.collectionLoading = false
+        if (data.status === 200) {
+          if (opera === 'add') {
+            item[0].islike = true
+          } else {
+            item[0].islike = false
+          }
+          this.changePortfolioCoin(data.data)
+          this.allCoinList = Object.assign({}, this.allCoinList)
+        } else {
+          console.log('aaaaaaaaaaaa')
+        }
       },
       async getTick() {
         let symbol = this.currInfo.baseCoin + this.currInfo.quoteCoin
@@ -212,28 +289,29 @@
           pageSize: pageSize,
           pageIndex: pageIndex
         })
-        if (data.status !== 200) {
-          this.myEntrustList = []
-          return
-        }
-        let myEntrustList = data.data
-        this.pagination.totalSize = data.total
-        let way, state
-        for (let i = 0; i < myEntrustList.length; i++) {
-          myEntrustList[i].createdAt = Tool.formatDate2(myEntrustList[i].createdAt, '/')
-          state = myEntrustList[i].state
-          way = myEntrustList[i].type
-          myEntrustList[i].typeChina = Tool.buyAndSellChange(way)
-          myEntrustList[i].stateStr = Tool.stateChange(state)
-          console.log(myEntrustList[i].price, myEntrustList[i].amount)
-          myEntrustList[i].totalPrice = Tool.decimal(myEntrustList[i].price, myEntrustList[i].amount, 'mul')
-          if (myEntrustList.state === 'PARTIAL_FILLED' || myEntrustList.state === 'FILLED') {
-            myEntrustList[i].averagePrice = Tool.decimal(myEntrustList.fieldCashAmount, myEntrustList.fieldAmount, 'mul')
-          } else {
-            myEntrustList[i].averagePrice = '--'
+        let precision = this.currInfo.currCoin.price_precision
+        if (data.status === 200) {
+          let myEntrustList = data.data
+          this.pagination.totalSize = data.total
+          let way, state
+          for (let i = 0; i < myEntrustList.length; i++) {
+            myEntrustList[i].createdAt = Tool.formatDate2(myEntrustList[i].createdAt, '/')
+            state = myEntrustList[i].state
+            way = myEntrustList[i].type
+            myEntrustList[i].typeChina = Tool.buyAndSellChange(way)
+            myEntrustList[i].stateStr = Tool.stateChange(state)
+            myEntrustList[i].totalPrice = Tool.decimal(myEntrustList[i].price, myEntrustList[i].amount, 'mul')
+            if (myEntrustList[i].state === 'PARTIAL_FILLED' || myEntrustList[i].state === 'FILLED') {
+              myEntrustList[i].averagePrice = Tool.decimal(myEntrustList[i].fieldCashAmount, myEntrustList[i].fieldAmount, 'mul').toFixed(precision)
+            } else {
+              myEntrustList[i].averagePrice = '--'
+            }
           }
+          this.myEntrustList = myEntrustList
+        } else {
+          this.pagination.totalSize = 0
+          this.myEntrustList = []
         }
-        this.myEntrustList = myEntrustList
       },
       unTickSubscribe () {
         for (let i = 0; i < this.unSubscribes.length; i++) {
@@ -249,7 +327,7 @@
       async changeCoin (baseCoin, quoteCoin) {
         this.$router.push('/coinToCoin/' + baseCoin + '_' + quoteCoin)
         this.preExchangeId = this.currInfo.exchangeId
-        let exchangeList = this.coinList[quoteCoin][baseCoin]
+        let exchangeList = this.allCoinList[quoteCoin][baseCoin]
         this.preCoin = this.currInfo.baseCoin + this.currInfo.quoteCoin
         this.currInfo.symbol = baseCoin + quoteCoin
         this.currInfo.baseCoin = baseCoin
@@ -258,7 +336,6 @@
         this.currInfo.exchangeId = null
         this.unTickSubscribe()
         this.getTick()
-        this.$refs.entrust.changeAssert()
       },
       changeExchange (exchangeId) {
         this.currInfo.exchangeId = exchangeId
@@ -295,7 +372,10 @@
           channel: 'market_' + symbol + '_depth_step0',
           id: symbol
         })
-        this.$refs.entrust.changeAssert()
+        this.$refs.entrust.changePrice()
+        if (this.userInfo !== null) {
+          this.$refs.currAssert.getAssert()
+        }
         this.$refs.keyLine.changeSymbol(symbol, this.currInfo.exchangeId)
         this.$refs.myEntrustListRef.toPage(1)
       },
@@ -321,12 +401,13 @@
           if (exchangeList[i].bilianHisId === exchangeId) {
             msg.tick.close = Tool.intercept(msg.tick.close, exchangeList[i].limitPricePrecision)
             exchangeList[i].tick = msg.tick
+            exchangeList[i].logo = exchange.logo
             if (this.currInfo.exchangeId !== null && this.currInfo.exchangeId >= 0) {
               if (exchangeList[i].bilianHisId === this.currInfo.exchangeId) {
                 temp = this.currInfo.currCoin === null ? 0 : 1
                 this.currInfo.currCoin = exchangeList[i]
                 if (this.$refs.entrust && temp === 0) {
-                  this.$refs.entrust.changeAssert()
+                  this.$refs.entrust.changePrice()
                 }
               }
             } else {
@@ -340,7 +421,10 @@
                 }
               }
               this.$refs.myEntrustListRef.toPage(1)
-              this.$refs.entrust.changeAssert()
+              this.$refs.entrust.changePrice()
+              if (this.userInfo !== null) {
+                this.$refs.currAssert.getAssert()
+              }
               for (let i = 0; i < this.exchangeList.length; i++) {
                 if (this.exchangeList[i].exchange_id === this.currInfo.exchangeId) {
                   if (this.exchangeList[i]['ws']) {
@@ -379,6 +463,10 @@
     destroyed: function () {
       this.preExchangeId = this.currInfo.exchangeId
       this.unTickSubscribe()
+    },
+    async asyncData(context) {
+      let store = context.store
+      return store.dispatch('getCoinList')
     }
   }
 </script>
@@ -507,6 +595,7 @@
         .exchange-list{
           width:100%;
           overflow: hidden;
+          height:140px;
           ul{
             margin:10px 0;
             width:5000px;
@@ -527,6 +616,12 @@
               }
               >div:nth-child(2) {
                 margin-top:15px;
+                img{
+                  width:22px;
+                  height:22px;
+                  border-radius: 50%;
+                  vertical-align: -4px;
+                }
                 span:nth-child(1) {
                   margin-left:56px;
                   font-size: 18px;
@@ -641,6 +736,27 @@
   .opera{
     color:@click_color;
     cursor:pointer;
+  }
+  .no_login{
+    line-height: 110px;
+    text-align: center;
+    font-size:16px;
+    color:#fff;
+    a{
+      color: #39f1ff;
+      cursor: pointer;
+    }
+  }
+  .userAssert{
+    height:112px;
+    background:@bg_color;
+  }
+  .keyLine{
+    height:500px;
+    background:@bg_color;
+  }
+  .otherEntrustList{
+    height:560px;
   }
 
 </style>

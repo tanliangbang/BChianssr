@@ -1,9 +1,9 @@
 <template>
-  <div class="currEntrustList" v-if="currInfo.currCoin.tick">
-    <div>
+  <div class="currEntrustList">
+    <div v-if="currInfo.currCoin">
       {{$t("lang.exchange.lastPrice")}} {{currInfo.currCoin.tick.close}}
     </div>
-    <div>
+    <div v-if="currInfo.currCoin">
       <div>
         <table cellpadding="0" cellspacing="0">
          <tr><th></th><th>{{$t("lang.exchange.price")}}({{currInfo.quoteCoin.toUpperCase()}})</th><th>{{$t("lang.exchange.amount")}}({{currInfo.baseCoin.toUpperCase()}})</th><th>{{$t("lang.exchange.sum")}}({{currInfo.baseCoin.toUpperCase()}})</th></tr>
@@ -57,6 +57,8 @@ export default {
 <style lang="less" scoped>
 @import "./../../../style/var";
   .currEntrustList{
+    background:@bg_color;
+    height:100%;
     >div:nth-child(1) {
       height:66px;
       line-height:66px;

@@ -172,3 +172,11 @@ export const makeOtcOrder = (param) => http.post(base + '/otc/orders', param)
 export const myOtcOrderList = (param) => http.get(base + '/otc/orders', param)
 
 export const cancelOtcOrder = (param) => http.post(base + ' /exchange/orders/order/canceled', param)
+
+export const getRate = (param) => http.get(base + '/symbols/rate', param)
+
+export const authExchange = (param) => http.post(base + '/users/exchange/account', param)
+
+export const getPortfolioCoin = (param) => http.get(base + '/users/portfolio', param)
+
+export const collectionSymbol = (param) => http.post(base + '/users/portfolio', param)

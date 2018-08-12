@@ -25,6 +25,9 @@ const actions = {
     commit('SET_COINLIST', data)
   },
   getExchangelist: ({ state, commit }) => {
+    if (state.exchangeList.length > 0) {
+      return
+    }
     return api.getExchangeList().then(function (res) {
       if (res.status === 200) {
         commit('SET_EXCHANGELIST', res.data)
@@ -32,6 +35,9 @@ const actions = {
     })
   },
   getCoinList: ({ state, commit }) => {
+    if (JSON.stringify(state.coinList) !== '{}') {
+      return
+    }
     return api.getAllSymobl().then(function (res) {
       if (res.status === 200) {
         commit('SET_COINLIST', res.data)
